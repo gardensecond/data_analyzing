@@ -4,21 +4,23 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+import urllib.request
 from matplotlib import font_manager, rc
 
-# ✅ 한글 폰트 자동 설정
-from matplotlib import font_manager, rc
-import matplotlib.pyplot as plt
+# ✅ NanumGothic 폰트 자동 다운로드 및 적용 (한글 깨짐 방지)
+font_url = "https://github.com/naver/nanumfont/blob/master/TTF/NanumGothic.ttf?raw=true"
+font_path = "/tmp/NanumGothic.ttf"
 
-font_candidates = ["Malgun Gothic", "AppleGothic", "NanumGothic", "Arial Unicode MS"]
+if not os.path.exists(font_path):
+    urllib.request.urlretrieve(font_url, font_path)
 
-for font in font_candidates:
-    if font in [f.name for f in font_manager.fontManager.ttflist]:
-        rc('font', family=font)
-        break
+font_manager.fontManager.addfont(font_path)
+rc('font', family='NanumGothic')
+plt.rcParams['axes.unicode_minus'] = False
 
-plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
-
+# ✅ Streamlit 설정
+st.set_page_config(layout="wide")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
 # ✅ GitHub CSV 경로
