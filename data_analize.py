@@ -4,16 +4,23 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-import koreanize_matplotlib  # 한글 폰트 자동 적용
+from matplotlib import font_manager, rc
+
+# ✅ 한글 폰트 수동 설정 (예: 나눔고딕)
+font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
+font_name = font_manager.FontProperties(fname=font_path).get_name()
+rc('font', family=font_name)
+plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
 
 st.set_page_config(layout="wide")
+
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
-# ✅ GitHub에서 직접 CSV 불러오기
-csv_url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
+# ✅ GitHub CSV 경로
+url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
 
-# CSV 파일 읽기 (실제 헤더는 3번째 줄부터 시작)
-df_raw = pd.read_csv(csv_url, encoding='utf-8-sig', header=2, skiprows=[3])
+# CSV 파일 읽기 (헤더는 3번째 줄부터 시작)
+df_raw = pd.read_csv(url, encoding='utf-8-sig', header=2, skiprows=[3])
 
 # 열 이름 정리
 df_raw.columns = [
