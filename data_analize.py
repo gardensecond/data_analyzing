@@ -6,13 +6,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import font_manager, rc
 
-# ✅ 한글 폰트 수동 설정 (예: 나눔고딕)
-font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
-font_name = font_manager.FontProperties(fname=font_path).get_name()
-rc('font', family=font_name)
-plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+# ✅ 한글 폰트 자동 설정
+from matplotlib import font_manager, rc
+import matplotlib.pyplot as plt
 
-st.set_page_config(layout="wide")
+font_candidates = ["Malgun Gothic", "AppleGothic", "NanumGothic", "Arial Unicode MS"]
+
+for font in font_candidates:
+    if font in [f.name for f in font_manager.fontManager.ttflist]:
+        rc('font', family=font)
+        break
+
+plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
