@@ -1,52 +1,69 @@
-import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
+import pandas as pd
+import altair as alt
 
-st.set_page_config(layout="wide")
-st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
+# 파일 불러오기
+file_path = "5대+범죄+발생현황_20250609121517.csv"
+df_raw = pd.read_csv(file_path, header=[0, 1, 2])
+df_raw.columns.values[0] = '자치구'
 
-# GitHub의 CSV 파일 경로
-csv_url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
-df_raw = pd.read_csv(csv_url, encoding='utf-8-sig', header=2, skiprows=[3])
+# 유효 데이터만 추출 (첫 2행은 메타정보)
+df = df_raw.iloc[2:].copy()
+df = df.rename(columns={df.columns[1]: '자치구'})  # 자치구 이름 열 정리
+df = df.drop(columns=df.columns[0])  # 불필요한 첫 번째 열 제거
 
-df_raw.columns = [
-    '자치구1', '자치구', '합계_발생', '합계_검거', '살인_발생', '살인_검거',
-    '강도_발생', '강도_검거', '성범죄_발생', '성범죄_검거',
-    '절도_발생', '절도_검거', '폭력_발생', '폭력_검거'
-]
+# 자치구 리스트
+gu_list = df['자치구'].unique().tolist()
 
-df = df_raw[df_raw['자치구'] != '소계'].drop(columns=['자치구1']).copy()
-
-# 숫자 변환
-for col in df.columns[1:]:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
-
-# 검거율 계산
-df['검거율'] = (df['합계_검거'] / df['합계_발생']) * 100
-
-# 🎯 사용자 필터
-st.sidebar.header("🔍 필터")
-selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구'].unique(), default=df['자치구'].unique())
+# 범죄 항목 목록 추출
 crime_types = ['살인', '강도', '성범죄', '절도', '폭력']
-selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", crime_types, default=crime_types)
+category_map = {
+    '성범죄': '강간·강제추행',
+}
+crime_columns = [(crime, stat) for crime in crime_types for stat in ['발생', '검거']]
 
-# 🔎 필터링된 데이터
-filtered_df = df[df['자치구'].isin(selected_gu)]
+# Streamlit UI
+st.title("📈 범죄율 및 검거율 시각화 대시보드")
 
-# 📊 시각화
-st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
-for crime in selected_crimes:
-    fig, ax = plt.subplots(figsize=(5, 3))
-    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']]
-    crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
+selected_gu = st.multiselect("자치구를 선택하세요", gu_list, default=gu_list[:5])
+selected_crimes = st.multiselect("범죄 유형을 선택하세요", crime_types, default=['살인', '강도'])
 
-    sns.barplot(data=crime_data, x='자치구', y='검거율', palette='coolwarm', ax=ax)
-    ax.set_title(f'{crime} 검거율')
-    ax.set_ylabel('검거율 (%)')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-    st.pyplot(fig)
+# 데이터 전처리
+def preprocess_data(df, selected_gu, selected_crimes):
+    plot_data = []
 
-# 📋 데이터 출력
-with st.expander("📄 데이터 보기"):
-    st.dataframe(filtered_df.reset_index(drop=True))
+    for crime in selected_crimes:
+        display_name = category_map.get(crime, crime)
+        for stat in ['발생', '검거']:
+            col = ('2023', display_name, stat)
+            if col not in df.columns:
+                continue
+            for _, row in df[df['자치구'].isin(selected_gu)].iterrows():
+                plot_data.append({
+                    '자치구': row['자치구'],
+                    '범죄유형': crime,
+                    '통계': stat,
+                    '건수': int(row[col])
+                })
+
+    return pd.DataFrame(plot_data)
+
+plot_df = preprocess_data(df, selected_gu, selected_crimes)
+
+# 시각화
+st.markdown("## 📊 자치구별 범죄 발생 및 검거 추이")
+
+if not plot_df.empty:
+    chart = alt.Chart(plot_df).mark_line(point=True).encode(
+        x='자치구:N',
+        y='건수:Q',
+        color='범죄유형:N',
+        strokeDash='통계:N',
+        tooltip=['자치구', '범죄유형', '통계', '건수']
+    ).properties(
+        width=800,
+        height=400
+    )
+    st.altair_chart(chart, use_container_width=True)
+else:
+    st.warning("선택한 자치구나 범죄 유형에 해당하는 데이터가 없습니다.")
