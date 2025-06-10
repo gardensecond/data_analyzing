@@ -1,65 +1,52 @@
-# app.py
-
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib import font_manager, rc
-
-# ✅ 한글 폰트 수동 설정 (예: 나눔고딕)
-font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
-font_name = font_manager.FontProperties(fname=font_path).get_name()
-rc('font', family=font_name)
-plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
 
 st.set_page_config(layout="wide")
-
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
-# ✅ GitHub CSV 경로
-url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
+# GitHub의 CSV 파일 경로
+csv_url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
+df_raw = pd.read_csv(csv_url, encoding='utf-8-sig', header=2, skiprows=[3])
 
-# CSV 파일 읽기 (헤더는 3번째 줄부터 시작)
-df_raw = pd.read_csv(url, encoding='utf-8-sig', header=2, skiprows=[3])
-
-# 열 이름 정리
 df_raw.columns = [
     '자치구1', '자치구', '합계_발생', '합계_검거', '살인_발생', '살인_검거',
     '강도_발생', '강도_검거', '성범죄_발생', '성범죄_검거',
     '절도_발생', '절도_검거', '폭력_발생', '폭력_검거'
 ]
 
-# 불필요한 행 및 열 제거
-df = df_raw[df_raw['자치구'] != '소계'].copy()
-df = df.drop(columns=['자치구1'])
+df = df_raw[df_raw['자치구'] != '소계'].drop(columns=['자치구1']).copy()
 
-# 숫자형 변환
+# 숫자 변환
 for col in df.columns[1:]:
     df[col] = pd.to_numeric(df[col], errors='coerce')
 
 # 검거율 계산
 df['검거율'] = (df['합계_검거'] / df['합계_발생']) * 100
-df_sorted = df.sort_values(by='검거율', ascending=False)
 
-# 📊 검거율 시각화
-st.subheader("✅ 자치구별 검거율")
-fig, ax = plt.subplots(figsize=(12, 8))
-sns.barplot(data=df_sorted, x='검거율', y='자치구', palette='Greens', ax=ax)
-ax.set_title('서울시 자치구별 범죄 검거율 (2023)')
-ax.set_xlabel('검거율 (%)')
-ax.set_ylabel('자치구')
-st.pyplot(fig)
+# 🎯 사용자 필터
+st.sidebar.header("🔍 필터")
+selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구'].unique(), default=df['자치구'].unique())
+crime_types = ['살인', '강도', '성범죄', '절도', '폭력']
+selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", crime_types, default=crime_types)
 
-# 📊 범죄 유형별 합계 시각화
-st.subheader("✅ 범죄 유형별 총합 (발생 기준)")
-crime_totals = df[['살인_발생', '강도_발생', '성범죄_발생', '절도_발생', '폭력_발생']].sum().sort_values(ascending=False)
-fig2, ax2 = plt.subplots(figsize=(8, 6))
-sns.barplot(x=crime_totals.values, y=crime_totals.index, palette='Reds_r', ax=ax2)
-ax2.set_title("범죄 유형별 총합 (2023)")
-ax2.set_xlabel("발생 건수")
-ax2.set_ylabel("범죄 유형")
-st.pyplot(fig2)
+# 🔎 필터링된 데이터
+filtered_df = df[df['자치구'].isin(selected_gu)]
 
-# 📋 데이터프레임 출력
-with st.expander("🔍 원본 데이터 보기"):
-    st.dataframe(df.reset_index(drop=True))
+# 📊 시각화
+st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
+for crime in selected_crimes:
+    fig, ax = plt.subplots(figsize=(10, 5))
+    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']]
+    crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
+
+    sns.barplot(data=crime_data, x='자치구', y='검거율', palette='coolwarm', ax=ax)
+    ax.set_title(f'{crime} 검거율')
+    ax.set_ylabel('검거율 (%)')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    st.pyplot(fig)
+
+# 📋 데이터 출력
+with st.expander("📄 데이터 보기"):
+    st.dataframe(filtered_df.reset_index(drop=True))
