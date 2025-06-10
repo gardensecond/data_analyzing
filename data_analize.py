@@ -22,7 +22,7 @@ st.sidebar.markdown("### 🧭 자치구 필터")
 if st.sidebar.button("자치구 전체 선택 해제"):
     selected_gu = []
 else:
-    selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구'].unique(), default=df['자치구'].unique())
+    selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구(2)'].unique(), default=df['자치구(2)'].unique())
 
 # 범죄 유형 선택 필터
 st.sidebar.markdown("### 🚨 범죄유형 필터")
