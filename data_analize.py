@@ -16,7 +16,8 @@ font_manager.fontManager.addfont(font_path)
 rc('font', family='NanumGothic')
 plt.rcParams['axes.unicode_minus'] = False
 
-st.set_page_config(layout="centered")
+# ✅ 페이지 설정
+st.set_page_config(layout="wide")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
 # GitHub CSV 직접 불러오기
