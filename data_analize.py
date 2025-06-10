@@ -3,6 +3,19 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# ✅ 한글 폰트 설정 (Streamlit Cloud에서도 작동)
+font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+font_path = "/tmp/NanumGothic.ttf"
+
+# 폰트가 없으면 다운로드
+if not os.path.exists(font_path):
+    urllib.request.urlretrieve(font_url, font_path)
+
+# matplotlib에 폰트 적용
+font_manager.fontManager.addfont(font_path)
+rc('font', family='NanumGothic')
+plt.rcParams['axes.unicode_minus'] = False
+
 st.set_page_config(layout="centered")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
