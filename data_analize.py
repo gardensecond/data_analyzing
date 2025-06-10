@@ -6,7 +6,7 @@ import seaborn as sns
 st.set_page_config(layout="wide")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
-# GitHub의 CSV 파일 경로
+# GitHub CSV 직접 불러오기
 csv_url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
 df_raw = pd.read_csv(csv_url, encoding='utf-8-sig', header=2, skiprows=[3])
 
