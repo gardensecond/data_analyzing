@@ -1,85 +1,71 @@
-import streamlit as st
+# app.py
+
 import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+import urllib.request
+from matplotlib import font_manager, rc
 
-# 페이지 설정
-st.set_page_config(layout="wide", page_title="서울시 자치구별 범죄 분석 대시보드")
+# ✅ 한글 폰트 설정 (Streamlit Cloud에서도 작동)
+font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+font_path = "/tmp/NanumGothic.ttf"
 
-# 예시용 데이터 로딩 (실제 데이터로 대체하세요)
-@st.cache_data
-def load_data():
-    # 예시 데이터 형식: ['년도', '자치구', '범죄유형', '발생건수', '검거건수']
-    return pd.read_csv("seoul_crime_by_year.csv")
+# 폰트가 없으면 다운로드
+if not os.path.exists(font_path):
+    urllib.request.urlretrieve(font_url, font_path)
 
-data = load_data()
+# matplotlib에 폰트 적용
+font_manager.fontManager.addfont(font_path)
+rc('font', family='NanumGothic')
+plt.rcParams['axes.unicode_minus'] = False
 
-# 자치구와 범죄유형 목록
-districts = sorted(data["자치구"].unique())
-crime_types = sorted(data["범죄유형"].unique())
+# ✅ 페이지 설정
+st.set_page_config(layout="wide")
+st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
-# --- 사이드바 필터 영역 ---
-with st.sidebar:
-    st.title("🔍 필터")
+# ✅ GitHub에서 데이터 불러오기
+url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
+df_raw = pd.read_csv(url, encoding='utf-8-sig', header=2, skiprows=[3])
 
-    selected_districts = st.multiselect(
-        "자치구를 선택하세요",
-        options=districts,
-        default=districts,
-        key="districts"
-    )
-    if st.button("자치구 전체 선택 해제"):
-        selected_districts = []
-
-    selected_crimes = st.multiselect(
-        "범죄 유형을 선택하세요",
-        options=crime_types,
-        default=crime_types,
-        key="crimes"
-    )
-    if st.button("범죄 유형 전체 선택 해제"):
-        selected_crimes = []
-
-# --- 메인 페이지 ---
-st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석")
-st.markdown("**선택된 자치구와 범죄 유형에 따라 연도별 추이를 꺾은선 그래프로 시각화합니다.**")
-
-# 필터링
-filtered = data[
-    data["자치구"].isin(selected_districts) & 
-    data["범죄유형"].isin(selected_crimes)
+# ✅ 열 이름 정리
+df_raw.columns = [
+    '자치구1', '자치구', '합계_발생', '합계_검거', '살인_발생', '살인_검거',
+    '강도_발생', '강도_검거', '성범죄_발생', '성범죄_검거',
+    '절도_발생', '절도_검거', '폭력_발생', '폭력_검거'
 ]
 
-# --- 시각화 영역 ---
-if filtered.empty:
-    st.warning("선택된 조건에 해당하는 데이터가 없습니다.")
-else:
-    for crime in selected_crimes:
-        st.subheader(f"📈 {crime} 발생건수 및 검거율 추이")
+# ✅ 불필요한 행/열 제거 및 숫자형 변환
+df = df_raw[df_raw['자치구'] != '소계'].copy()
+df = df.drop(columns=['자치구1'])
 
-        crime_data = filtered[filtered["범죄유형"] == crime]
-        crime_data["검거율"] = crime_data["검거건수"] / crime_data["발생건수"] * 100
+for col in df.columns[1:]:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        fig, ax1 = plt.subplots(figsize=(10, 5))
-        
-        for district in selected_districts:
-            subset = crime_data[crime_data["자치구"] == district]
-            ax1.plot(subset["년도"], subset["발생건수"], label=f"{district} 발생건수")
+# ✅ 검거율 계산
+df['검거율'] = (df['합계_검거'] / df['합계_발생']) * 100
+df_sorted = df.sort_values(by='검거율', ascending=False)
 
-        ax1.set_ylabel("발생건수")
-        ax1.set_xlabel("년도")
-        ax1.legend()
-        ax1.set_title(f"{crime} 발생 추이")
-        st.pyplot(fig)
+# ✅ 검거율 시각화
+st.subheader("✅ 자치구별 검거율")
+fig1, ax1 = plt.subplots(figsize=(12, 8))
+sns.barplot(data=df_sorted, x='검거율', y='자치구', palette='Greens', ax=ax1)
+ax1.set_title('서울시 자치구별 범죄 검거율 (2023)')
+ax1.set_xlabel('검거율 (%)')
+ax1.set_ylabel('자치구')
+st.pyplot(fig1)
 
-        # 검거율 그래프
-        fig, ax2 = plt.subplots(figsize=(10, 5))
-        for district in selected_districts:
-            subset = crime_data[crime_data["자치구"] == district]
-            ax2.plot(subset["년도"], subset["검거율"], label=f"{district} 검거율")
+# ✅ 범죄 유형별 총합 시각화
+st.subheader("✅ 범죄 유형별 총합 (발생 기준)")
+crime_totals = df[['살인_발생', '강도_발생', '성범죄_발생', '절도_발생', '폭력_발생']].sum().sort_values(ascending=False)
+fig2, ax2 = plt.subplots(figsize=(8, 6))
+sns.barplot(x=crime_totals.values, y=crime_totals.index, palette='Reds_r', ax=ax2)
+ax2.set_title("범죄 유형별 총합 (2023)")
+ax2.set_xlabel("발생 건수")
+ax2.set_ylabel("범죄 유형")
+st.pyplot(fig2)
 
-        ax2.set_ylabel("검거율 (%)")
-        ax2.set_xlabel("년도")
-        ax2.legend()
-        ax2.set_title(f"{crime} 검거율 추이")
-        st.pyplot(fig)
+# ✅ 원본 데이터 보기
+with st.expander("🔍 원본 데이터 보기"):
+    st.dataframe(df.reset_index(drop=True))
