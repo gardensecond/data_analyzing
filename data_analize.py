@@ -37,7 +37,7 @@ filtered_df = df[df['자치구'].isin(selected_gu)]
 # 📊 시각화
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
 for crime in selected_crimes:
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(8, 3))
     crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']]
     crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
 
