@@ -3,83 +3,71 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# 페이지 설정
-st.set_page_config(layout="wide", page_title="서울시 자치구별 범죄 분석 대시보드")
+# 스타일 지정
+st.set_page_config(layout="wide")
+st.markdown("<h1 style='font-size: 28px;'>🔍 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)</h1>", unsafe_allow_html=True)
 
-# 예시용 데이터 로딩 (실제 데이터로 대체하세요)
-@st.cache_data
-def load_data():
-    # 예시 데이터 형식: ['년도', '자치구', '범죄유형', '발생건수', '검거건수']
-    return pd.read_csv("seoul_crime_by_year.csv")
+# 데이터 불러오기 (예시용)
+df = pd.read_csv("crime_seoul_2023.csv")  # '자치구', '범죄유형', '발생건수', '검거건수' 포함 필요
 
-data = load_data()
+# 범죄율, 검거율 계산
+df["검거율"] = (df["검거건수"] / df["발생건수"]) * 100
+df["범죄율"] = df["발생건수"] / df["발생건수"].sum() * 100  # 전체 대비 비율
 
-# 자치구와 범죄유형 목록
-districts = sorted(data["자치구"].unique())
-crime_types = sorted(data["범죄유형"].unique())
+# --- 사이드바 필터 ---
+st.sidebar.markdown("### 🔍 필터")
 
-# --- 사이드바 필터 영역 ---
-with st.sidebar:
-    st.title("🔍 필터")
+# 자치구 선택
+gu_list = df["자치구"].unique().tolist()
+selected_gu = st.sidebar.multiselect("자치구를 선택하세요", gu_list, default=gu_list)
 
-    selected_districts = st.multiselect(
-        "자치구를 선택하세요",
-        options=districts,
-        default=districts,
-        key="districts"
-    )
-    if st.button("자치구 전체 선택 해제"):
-        selected_districts = []
+if st.sidebar.button("자치구 전체 선택 취소"):
+    selected_gu = []
 
-    selected_crimes = st.multiselect(
-        "범죄 유형을 선택하세요",
-        options=crime_types,
-        default=crime_types,
-        key="crimes"
-    )
-    if st.button("범죄 유형 전체 선택 해제"):
-        selected_crimes = []
+# 범죄유형 선택
+crime_list = df["범죄유형"].unique().tolist()
+selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", crime_list, default=crime_list)
 
-# --- 메인 페이지 ---
-st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석")
-st.markdown("**선택된 자치구와 범죄 유형에 따라 연도별 추이를 꺾은선 그래프로 시각화합니다.**")
+if st.sidebar.button("범죄유형 전체 선택 취소"):
+    selected_crimes = []
 
-# 필터링
-filtered = data[
-    data["자치구"].isin(selected_districts) & 
-    data["범죄유형"].isin(selected_crimes)
-]
+# 시각화 종류 선택
+chart_type = st.sidebar.radio("시각화 유형 선택", ["막대그래프 (검거율)", "꺾은선그래프 (범죄율/검거율 변화)"])
 
-# --- 시각화 영역 ---
-if filtered.empty:
-    st.warning("선택된 조건에 해당하는 데이터가 없습니다.")
-else:
-    for crime in selected_crimes:
-        st.subheader(f"📈 {crime} 발생건수 및 검거율 추이")
+# 필터 적용
+filtered_df = df[(df["자치구"].isin(selected_gu)) & (df["범죄유형"].isin(selected_crimes))]
 
-        crime_data = filtered[filtered["범죄유형"] == crime]
-        crime_data["검거율"] = crime_data["검거건수"] / crime_data["발생건수"] * 100
+# --- 메인 영역 ---
+st.markdown("### ✅ 선택된 범죄 유형 발생 및 검거율 비교")
 
-        fig, ax1 = plt.subplots(figsize=(10, 5))
-        
-        for district in selected_districts:
-            subset = crime_data[crime_data["자치구"] == district]
-            ax1.plot(subset["년도"], subset["발생건수"], label=f"{district} 발생건수")
+if chart_type == "막대그래프 (검거율)":
+    pivot_df = filtered_df.pivot(index="자치구", columns="범죄유형", values="검거율").fillna(0)
+    pivot_df = pivot_df[selected_crimes]  # 범죄유형 순서 고정
 
-        ax1.set_ylabel("발생건수")
-        ax1.set_xlabel("년도")
-        ax1.legend()
-        ax1.set_title(f"{crime} 발생 추이")
-        st.pyplot(fig)
+    fig, ax = plt.subplots(figsize=(10, 4))
+    pivot_df.plot(kind="bar", ax=ax, colormap="coolwarm", width=0.85)
+    plt.ylabel("검거율 (%)")
+    plt.title("검거율 비교", fontsize=15)
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    st.pyplot(fig)
 
-        # 검거율 그래프
-        fig, ax2 = plt.subplots(figsize=(10, 5))
-        for district in selected_districts:
-            subset = crime_data[crime_data["자치구"] == district]
-            ax2.plot(subset["년도"], subset["검거율"], label=f"{district} 검거율")
+elif chart_type == "꺾은선그래프 (범죄율/검거율 변화)":
+    fig, ax = plt.subplots(figsize=(10, 4))
 
-        ax2.set_ylabel("검거율 (%)")
-        ax2.set_xlabel("년도")
-        ax2.legend()
-        ax2.set_title(f"{crime} 검거율 추이")
-        st.pyplot(fig)
+    for gu in selected_gu:
+        gu_df = filtered_df[filtered_df["자치구"] == gu]
+        if gu_df.empty:
+            continue
+        gu_df = gu_df.groupby("범죄유형")[["범죄율", "검거율"]].mean().reset_index()
+        gu_df = gu_df.sort_values("범죄유형")
+
+        ax.plot(gu_df["범죄유형"], gu_df["범죄율"], label=f"{gu} - 범죄율", linestyle="--", marker="o")
+        ax.plot(gu_df["범죄유형"], gu_df["검거율"], label=f"{gu} - 검거율", linestyle="-", marker="s")
+
+    ax.set_ylabel("비율 (%)")
+    ax.set_title("자치구별 범죄율 및 검거율 변화", fontsize=15)
+    plt.xticks(rotation=45, ha='right')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    st.pyplot(fig)
