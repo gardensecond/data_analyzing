@@ -1,72 +1,71 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import matplotlib.pyplot as plt
 
-# 📁 CSV 파일 불러오기
-file_path = "5대+범죄+발생현황_20250609121517.csv"
-df_raw = pd.read_csv(file_path, header=[0, 1, 2])
+# 페이지 설정
+st.set_page_config(layout="wide", page_title="서울시 범죄 대시보드")
 
-# 📌 '자치구' 컬럼명 정리
-df_raw = df_raw.rename(columns={
-    ('자치구별(2)', '자치구별(2)', '자치구별(2)'): '자치구'
-})
+# CSV 데이터 불러오기
+@st.cache_data
+def load_data():
+    df = pd.read_csv("5대 범죄 발생현황_20250609121517.csv")
+    df["검거율"] = df["검거건수"] / df["발생건수"] * 100
+    return df
 
-# ✅ 데이터 본문만 추출 (앞부분 2행은 메타 정보)
-df = df_raw.iloc[2:].copy()
+df = load_data()
 
-# 🏙 자치구 리스트
-gu_list = df['자치구'].unique().tolist()
+# 자치구 및 범죄유형 목록
+districts = sorted(df["자치구"].unique())
+crime_types = sorted(df["범죄유형"].unique())
 
-# 🔍 범죄 유형 목록 정의
-crime_types = ['살인', '강도', '성범죄', '절도', '폭력']
-category_map = {
-    '성범죄': '강간·강제추행',
-}
+# --- 사이드바 필터 ---
+with st.sidebar:
+    st.title("🔍 필터")
 
-# 📊 Streamlit UI
-st.title("📈 범죄율 및 검거율 시각화 대시보드")
+    selected_districts = st.multiselect("자치구 선택", options=districts, default=districts)
+    if st.button("자치구 전체 해제"):
+        selected_districts = []
 
-selected_gu = st.multiselect("자치구를 선택하세요", gu_list, default=gu_list[:5])
-selected_crimes = st.multiselect("범죄 유형을 선택하세요", crime_types, default=['살인', '강도'])
+    selected_crimes = st.multiselect("범죄 유형 선택", options=crime_types, default=crime_types)
+    if st.button("범죄 유형 전체 해제"):
+        selected_crimes = []
 
-# 🔧 전처리 함수
-def preprocess_data(df, selected_gu, selected_crimes):
-    plot_data = []
-    for crime in selected_crimes:
-        display_name = category_map.get(crime, crime)
-        for stat in ['발생', '검거']:
-            col = ('2023', '합계', display_name if stat == '발생' else display_name + '.1')
-            if col not in df.columns:
-                continue
-            for _, row in df[df['자치구'].isin(selected_gu)].iterrows():
-                try:
-                    value = int(row[col])
-                except:
-                    value = 0
-                plot_data.append({
-                    '자치구': row['자치구'],
-                    '범죄유형': crime,
-                    '통계': stat,
-                    '건수': value
-                })
-    return pd.DataFrame(plot_data)
+# --- 필터 적용 ---
+filtered = df[
+    df["자치구"].isin(selected_districts) & 
+    df["범죄유형"].isin(selected_crimes)
+]
 
-# 📈 데이터 전처리 후 시각화
-plot_df = preprocess_data(df, selected_gu, selected_crimes)
+# --- 메인 대시보드 영역 ---
+st.title("📊 자치구별 범죄 발생 및 검거율 추이")
+st.markdown("자치구와 범죄 유형을 선택하면, 연도별 발생건수와 검거율을 꺾은선 그래프로 확인할 수 있습니다.")
 
-st.markdown("## 📊 자치구별 범죄 발생 및 검거 추이")
-
-if not plot_df.empty:
-    chart = alt.Chart(plot_df).mark_line(point=True).encode(
-        x='자치구:N',
-        y='건수:Q',
-        color='범죄유형:N',
-        strokeDash='통계:N',
-        tooltip=['자치구', '범죄유형', '통계', '건수']
-    ).properties(
-        width=800,
-        height=400
-    )
-    st.altair_chart(chart, use_container_width=True)
+if filtered.empty:
+    st.warning("선택된 조건에 해당하는 데이터가 없습니다.")
 else:
-    st.warning("선택한 자치구나 범죄 유형에 해당하는 데이터가 없습니다.")
+    for crime in selected_crimes:
+        st.subheader(f"📈 {crime} - 발생건수 및 검거율")
+
+        crime_data = filtered[filtered["범죄유형"] == crime]
+
+        # 발생건수 그래프
+        fig1, ax1 = plt.subplots(figsize=(9, 4))
+        for gu in selected_districts:
+            line = crime_data[crime_data["자치구"] == gu]
+            ax1.plot(line["년도"], line["발생건수"], label=gu)
+        ax1.set_title(f"{crime} - 연도별 발생건수")
+        ax1.set_xlabel("년도")
+        ax1.set_ylabel("발생건수")
+        ax1.legend(fontsize="small", ncol=4)
+        st.pyplot(fig1)
+
+        # 검거율 그래프
+        fig2, ax2 = plt.subplots(figsize=(9, 4))
+        for gu in selected_districts:
+            line = crime_data[crime_data["자치구"] == gu]
+            ax2.plot(line["년도"], line["검거율"], label=gu)
+        ax2.set_title(f"{crime} - 연도별 검거율 (%)")
+        ax2.set_xlabel("년도")
+        ax2.set_ylabel("검거율 (%)")
+        ax2.legend(fontsize="small", ncol=4)
+        st.pyplot(fig2)
