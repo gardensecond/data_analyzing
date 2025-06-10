@@ -3,6 +3,14 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# ✅ 한글 폰트 수동 설정 (예: 나눔고딕)
+font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
+font_name = font_manager.FontProperties(fname=font_path).get_name()
+rc('font', family=font_name)
+plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+
+st.set_page_config(layout="wide")
+
 st.set_page_config(layout="wide")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
