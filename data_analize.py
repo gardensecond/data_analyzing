@@ -2,9 +2,16 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-plt.rcParams['font.family'] ='Malgun Gothic'
-plt.rcParams['axes.unicode_minus'] =False
+import matplotlib.font_manager as fm
 
+# 나눔글꼴 경로 설정
+font_path = 'C:/Windows/Fonts/NanumGothic.ttf'
+
+# 폰트 이름 가져오기
+font_name = fm.FontProperties(fname=font_path).get_name()
+
+# 폰트 설정
+plt.rc('font', family=font_name)
 st.set_page_config(layout="centered")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
