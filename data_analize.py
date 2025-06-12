@@ -11,8 +11,6 @@ elif platform.system() == 'Darwin':  # macOS
 else:  # Linux (Streamlit Cloud 등)
     plt.rc('font', family='NanumGothic')
 
-plt.rc('axes.unicode_minus', False)  # 마이너스 깨짐 방지
-
 st.set_page_config(layout="centered")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
