@@ -1,18 +1,24 @@
+import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
+import seaborn as sns
 import matplotlib.font_manager as fm
 import platform
 
-# 한글 폰트 설정
+# ✅ 페이지 설정은 꼭 최상단에
+st.set_page_config(layout="centered")
+
+# ✅ 한글 폰트 설정
 if platform.system() == 'Windows':
     plt.rcParams['font.family'] = 'Malgun Gothic'
 elif platform.system() == 'Darwin':  # macOS
     plt.rcParams['font.family'] = 'AppleGothic'
 else:  # Linux (예: Streamlit Cloud)
-    plt.rcParams['font.family'] = 'NanumGothic'
+    plt.rcParams['font.family'] = 'NanumGothic'  # 미리 설치되어 있어야 함
 
 plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 
-st.set_page_config(layout="centered")
+# 🔷 앱 제목
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
 # GitHub의 CSV 파일 경로
@@ -47,7 +53,7 @@ filtered_df = df[df['자치구'].isin(selected_gu)]
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
 for crime in selected_crimes:
     fig, ax = plt.subplots(figsize=(10, 5))
-    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']]
+    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']].copy()
     crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
 
     sns.barplot(data=crime_data, x='자치구', y='검거율', palette='coolwarm', ax=ax)
