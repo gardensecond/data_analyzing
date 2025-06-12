@@ -1,19 +1,16 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 import matplotlib.font_manager as fm
 import platform
-import subprocess
 
-subprocess.run([
-    "apt-get", "update"
-])
-subprocess.run([
-    "apt-get", "install", "-y", "fonts-nanum"
-])
+# 한글 폰트 설정
+if platform.system() == 'Windows':
+    plt.rcParams['font.family'] = 'Malgun Gothic'
+elif platform.system() == 'Darwin':  # macOS
+    plt.rcParams['font.family'] = 'AppleGothic'
+else:  # Linux (예: Streamlit Cloud)
+    plt.rcParams['font.family'] = 'NanumGothic'
 
-# 설치 후 런타임 다시 불러오기 필요
-import matplotlib.font_manager as fm
-fm._rebuild()
+plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 
 st.set_page_config(layout="centered")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
