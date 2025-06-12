@@ -5,7 +5,7 @@ import seaborn as sns
 import os
 import matplotlib.font_manager as fm
 
-font_path = os.path.join(os.getcwd(),"data","NanumGothic.otf")
+font_path = os.path.join(os.getcwd(), "NanumGothic.otf")
 fm.fontManager.addfont(font_path)
 font_prop = fm.FontProperties(fname=font_path)
 plt.rcParams['font.family']=font_prop.get_name()
