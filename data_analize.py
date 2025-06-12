@@ -2,13 +2,15 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 import matplotlib.font_manager as fm
 
-# 1. TTF 파일 경로 지정
-font_path = 'NanumGothic-Regular.ttf'  # 경로에 맞게 수정하세요
+font_path = os.path.join(os.getcwd(),"data","NanumGothic.otf")
+fm.fontmanager.addfont(font_path)
+font_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family']=font_prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False
 
-# 2. 폰트 속성 설정
-fontprop = fm.FontProperties(fname=font_path, size=12)
 st.set_page_config(layout="centered")
 st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)")
 
