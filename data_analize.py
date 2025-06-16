@@ -30,24 +30,26 @@ df = df_raw[df_raw['자치구'] != '소계'].drop(columns=['자치구1']).copy()
 for col in df.columns[1:]:
     df[col] = pd.to_numeric(df[col], errors='coerce')
 
-# 검거율 계산
+# 검거율 계산 함경 클리핑
 df['검거율'] = (df['합계_검거'] / df['합계_발생']) * 100
+df['검거율'] = df['검거율'].clip(upper=100)  # 검거율이 100% 넘째는 경우 클리핑 처리
 
-# 🎯 사용자 필터
+# 편치 필터
 st.sidebar.header("🔍 필터")
 selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구'].unique(), default=df['자치구'].unique())
 crime_types = ['살인', '강도', '성범죄', '절도', '폭력']
 selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", crime_types, default=crime_types)
 
-# 🔎 필터링된 데이터
+# 필터링 된 데이터
 filtered_df = df[df['자치구'].isin(selected_gu)]
 
-# 📊 시각화
+# 시각화
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
 for crime in selected_crimes:
     fig, ax = plt.subplots(figsize=(10, 5))
     crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']].copy()
     crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
+    crime_data['검거율'] = crime_data['검거율'].clip(upper=100)  # 검거율 클리핑
 
     sns.barplot(data=crime_data, x='자치구', y='검거율', palette='coolwarm', ax=ax)
     ax.set_title(f'{crime} 검거율')
@@ -55,6 +57,6 @@ for crime in selected_crimes:
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
     st.pyplot(fig)
 
-# 📋 데이터 출력
+# 데이터 보기
 with st.expander("📄 데이터 보기"):
     st.dataframe(filtered_df.reset_index(drop=True))
