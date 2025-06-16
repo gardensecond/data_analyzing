@@ -42,26 +42,16 @@ selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", cri
 # 🔎 필터링된 데이터
 filtered_df = df[df['자치구'].isin(selected_gu)]
 
-# ❗️선택되지 않은 항목 보기 (항상 표시)
-st.markdown("---")
-st.subheader("🚫 선택하지 않은 항목")
-col1, col2 = st.columns(2)
+# ❗️선택되지 않은 항목 보기
+with st.expander("🚫 선택하지 않은 항목 보기"):
+    unselected_gu = sorted(set(df['자치구']) - set(selected_gu))
+    unselected_crimes = sorted(set(crime_types) - set(selected_crimes))
 
-with col1:
     st.markdown("**제외된 자치구:**")
-    if unselected_gu:
-        for gu in unselected_gu:
-            st.markdown(f"- {gu}")
-    else:
-        st.write("없음")
+    st.write(", ".join(unselected_gu) if unselected_gu else "없음")
 
-with col2:
     st.markdown("**제외된 범죄 유형:**")
-    if unselected_crimes:
-        for crime in unselected_crimes:
-            st.markdown(f"- {crime}")
-    else:
-        st.write("없음")
+    st.write(", ".join(unselected_crimes) if unselected_crimes else "없음")
 
 # 📊 시각화
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
@@ -76,6 +66,6 @@ for crime in selected_crimes:
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
     st.pyplot(fig)
 
-# 📋 데이터 출력 (항상 표시)
-st.subheader("📄 필터링된 데이터")
-st.dataframe(filtered_df.reset_index(drop=True))
+# 📋 데이터 출력
+with st.expander("📄 데이터 보기"):
+    st.dataframe(filtered_df.reset_index(drop=True))
