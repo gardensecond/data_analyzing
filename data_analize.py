@@ -42,17 +42,6 @@ selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", cri
 # 🔎 필터링된 데이터
 filtered_df = df[df['자치구'].isin(selected_gu)]
 
-# ❗️선택되지 않은 항목 보기
-with st.expander("🚫 선택하지 않은 항목 보기"):
-    unselected_gu = sorted(set(df['자치구']) - set(selected_gu))
-    unselected_crimes = sorted(set(crime_types) - set(selected_crimes))
-
-    st.markdown("**제외된 자치구:**")
-    st.write(", ".join(unselected_gu) if unselected_gu else "없음")
-
-    st.markdown("**제외된 범죄 유형:**")
-    st.write(", ".join(unselected_crimes) if unselected_crimes else "없음")
-
 # 📊 시각화
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
 for crime in selected_crimes:
