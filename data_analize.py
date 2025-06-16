@@ -8,7 +8,7 @@ import matplotlib.font_manager as fm
 font_path = os.path.join(os.getcwd(), "NanumGothic.otf")
 fm.fontManager.addfont(font_path)
 font_prop = fm.FontProperties(fname=font_path)
-plt.rcParams['font.family']=font_prop.get_name()
+plt.rcParams['font.family'] = font_prop.get_name()
 plt.rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(layout="centered")
@@ -18,15 +18,15 @@ st.title("📊 서울시 자치구별 범죄 발생 및 검거율 분석 (2023)"
 csv_url = "https://raw.githubusercontent.com/gardensecond/data_analyzing/main/5%EB%8C%80%2B%EB%B2%94%EC%A3%84%2B%EB%B0%9C%EC%83%9D%ED%98%84%ED%99%A9_20250609121517.csv"
 df_raw = pd.read_csv(csv_url, encoding='utf-8-sig', header=2, skiprows=[3])
 
+# 컬럼 이름 정리
 df_raw.columns = [
     '자치구1', '자치구', '합계_발생', '합계_검거', '살인_발생', '살인_검거',
     '강도_발생', '강도_검거', '성범죄_발생', '성범죄_검거',
     '절도_발생', '절도_검거', '폭력_발생', '폭력_검거'
 ]
 
+# 불필요한 행 제거 및 숫자 변환
 df = df_raw[df_raw['자치구'] != '소계'].drop(columns=['자치구1']).copy()
-
-# 숫자 변환
 for col in df.columns[1:]:
     df[col] = pd.to_numeric(df[col], errors='coerce')
 
@@ -46,7 +46,7 @@ filtered_df = df[df['자치구'].isin(selected_gu)]
 st.subheader("✅ 선택된 범죄 유형 발생 및 검거율 비교")
 for crime in selected_crimes:
     fig, ax = plt.subplots(figsize=(10, 5))
-    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']]
+    crime_data = filtered_df[[f'{crime}_발생', f'{crime}_검거', '자치구']].copy()
     crime_data['검거율'] = (crime_data[f'{crime}_검거'] / crime_data[f'{crime}_발생']) * 100
 
     sns.barplot(data=crime_data, x='자치구', y='검거율', palette='coolwarm', ax=ax)
