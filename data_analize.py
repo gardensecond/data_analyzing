@@ -5,7 +5,6 @@ import seaborn as sns
 import os
 import matplotlib.font_manager as fm
 
-# 폰트 설정
 font_path = os.path.join(os.getcwd(), "NanumGothic.otf")
 fm.fontManager.addfont(font_path)
 font_prop = fm.FontProperties(fname=font_path)
