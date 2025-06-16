@@ -38,11 +38,11 @@ df['검거율'] = (df['합계_검거'] / df['합계_발생']) * 100
 df['검거율'] = df['검거율'].clip(upper=100)
 
 # 사이드바 필터
-st.sidebar.markdown("## 🧭 대시보드 필터")
-st.sidebar.markdown("원하는 자치구와 범죄 유형을 선택해보세요!")
+st.sidebar.header("## 🧭 대시보드 필터")
 selected_gu = st.sidebar.multiselect("자치구를 선택하세요", df['자치구'].unique(), default=df['자치구'].unique())
 crime_types = ['살인', '강도', '성범죄', '절도', '폭력']
 selected_crimes = st.sidebar.multiselect("범죄 유형을 선택하세요", crime_types, default=crime_types)
+
 
 # 필터링 된 데이터
 filtered_df = df[df['자치구'].isin(selected_gu)]
